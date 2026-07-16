@@ -96,12 +96,4 @@ RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/start.py
 COPY ${ENTRY_POINT} /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 
-# USER ${USER_NAME}
-# root権限のままなら compose.yml で渡した /dev/gpiochip* 等へ素直にアクセスできるため、
-# USER は切り替えずroot(デフォルト)のままにしておく
-# (${USER_NAME} アカウント自体は sudo作業用に作成済み。 docker exec 等で必要な場合に利用する)
-
 WORKDIR /home/${USER_NAME}/${WS}
-
-# 起動コマンドは compose.yml 側の command
-# ( /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT} ) で指定する。

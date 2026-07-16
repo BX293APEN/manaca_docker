@@ -25,10 +25,12 @@ services:
     # | volumes | マウントするフォルダ/デバイス設定 | ホスト側: コンテナ内 |
     # | devices | GPIO等のデバイスファイルの受け渡し | ホスト側デバイス:コンテナ内デバイス |
     # | device_cgroup_rules | USBデバイスクラス等への読み書き許可 | privileged を使わずに抜き差しへ追従するための設定 |
+    # | privileged | 全てのデバイスにアクセス可能な特権モード | 必要に応じて絞ること |
     # | restart | コンテナの起動設定 | no unless-stopped always ... |
     # | environment | コンテナ内の環境変数を設定 | Python の `os.environ.get` 等でも取得可能 |
     # | ports | 外部からアクセス可能なポートを設定 | ホストマシンのポート番号:コンテナのポート番号 |
     # | depends_on | サービス間の依存関係を定義 | - |
+    # | command | サービスが起動したときに実行するコマンド | - |
     #
     # IPアドレスの確認 : docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" [${container_name}の値]
     #
@@ -106,16 +108,6 @@ services:
       # ==========================================
       # - db                                # 先にdbサービスが動いていることを確認する
 
-    # ==========================================
-    # 起動コマンド
-    #
-    # | 項目 | 内容 |
-    # | --- | --- |
-    # | command | コンテナ起動時に実行するエントリーポイント (.envのENTRY_DIR/ENTRY_POINTを参照) |
-    # | 備考 | ENTRY_POINT (start.sh) が pcscd起動 → start.py実行、を行う |
-    # | ファイル名変更時 | .env の ENTRY_POINT を書き換えるだけでよい (Dockerfile編集は不要) |
-    #
-    # ==========================================
     command:
       - /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 
