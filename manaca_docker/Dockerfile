@@ -64,23 +64,11 @@ RUN apt update && \
     pcscd pcsc-tools libpcsclite1 libpcsclite-dev libccid \
     swig gcc make usbutils && \
     useradd -m -s /bin/bash -u ${USER_ID} ${USER_NAME} && \
-    usermod -aG sudo,dialout,plugdev ${USER_NAME} && \
+    usermod -aG sudo ${USER_NAME} && \
     echo "root:${PASSWORD}" | chpasswd && \
     echo "${USER_NAME}:${PASSWORD}" | chpasswd && \
     mkdir -p /home/${USER_NAME}/${ENTRY_DIR} && \
     update-locale LANG=${LANG}
-
-# ==========================================
-# GPIO制御用グループの作成
-#
-# | 項目 | 内容 |
-# | --- | --- |
-# | gpio グループ | /dev/gpiomem, /dev/gpiochip* へのアクセス許可用 |
-# | 備考 | ホスト側のGID/デバイスファイルの権限に合わせて調整が必要な場合がある |
-#
-# ==========================================
-RUN groupadd -f gpio && \
-    usermod -aG gpio ${USER_NAME}
 
 # ==========================================
 # Pythonパッケージのインストール
@@ -97,16 +85,17 @@ RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 #
 # | 項目 | 内容 |
 # | --- | --- |
-# | entrypoint.sh | pcscd起動 → 一般ユーザーへ降格 → Python実行 の順で処理するスクリプト |
-# | 備考 | pcscd はUSB(カードリーダー)へのアクセスにroot権限が必要なため、コンテナはrootのまま起動する |
+# | entrypoint.sh | pcscd起動 → Python実行 の順で処理するスクリプト |
+# | 備考 | pcscd(USB)・gpiozero(GPIO)とも root権限が必要なため、コンテナはrootのまま動作させる |
 #
 # ==========================================
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # USER ${USER_NAME}
-# entrypoint.sh内で pcscd起動後に su コマンドを使い一般ユーザーへ降格するため、
-# ここでは USER を切り替えずroot(デフォルト)のままにしておく
+# root権限のままなら compose.yml で渡した /dev/gpiochip* 等へ素直にアクセスできるため、
+# USER は切り替えずroot(デフォルト)のままにしておく
+# (${USER_NAME} アカウント自体は sudo作業用に作成済み。 docker exec 等で必要な場合に利用する)
 
 WORKDIR /home/${USER_NAME}/${WS}
 

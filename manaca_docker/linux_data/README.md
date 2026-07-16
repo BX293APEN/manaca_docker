@@ -25,8 +25,9 @@
 
 ## 注意事項
 
-- `pcscd` (PC/SCデーモン) はUSBデバイスへアクセスするためroot権限で起動しています
-  (`entrypoint.sh` 参照)。Pythonスクリプト自体は一般ユーザー権限で実行されます。
+- `pcscd` (PC/SCデーモン) と Pythonスクリプト (`start.py`) はどちらもroot権限で
+  動作します (`entrypoint.sh` 参照)。USB(カードリーダー)・GPIOともroot権限が
+  必要なため、あえて非rootユーザーへの降格は行っていません。
 - GPIOへのアクセスには `compose.yml` 側で `privileged: true` を設定しているため、
   検証環境以外でそのまま使う場合はセキュリティ要件に応じて絞り込みを検討してください。
 - gpiozeroのピン制御バックエンドは `lgpio` を使用しています

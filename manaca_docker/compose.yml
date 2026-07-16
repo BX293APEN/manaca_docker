@@ -106,7 +106,7 @@ services:
       # ==========================================
       # Dockerfile側で ENTRYPOINT (entrypoint.sh) を定義しているため、
       # ここで command を指定する必要はない。
-      # entrypoint.sh が pcscd起動 → 一般ユーザーへ降格 → ${ENTRY_POINT} 実行、を行う。
+      # entrypoint.sh が pcscd起動 → ${ENTRY_POINT} 実行(rootのまま)、を行う。
       # ==========================================
 
     networks:
