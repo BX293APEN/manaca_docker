@@ -1,0 +1,127 @@
+# ==========================================
+# compose.yml
+#
+# | 項目 | 内容 | 備考 |
+# | --- | --- | --- |
+# | name | プロジェクト名 | 全て小文字 |
+# | services | 作成したいサービスを列挙 | YAMLはスペース2つ |
+# | nginx / db | 作成するサービスの名前 | docker composeで管理する際に必要 |
+#
+# ==========================================
+
+# name: project1
+
+services:
+  linux:
+    # ==========================================
+    # linuxサービスの設定項目
+    #
+    # | 項目 | 内容 | 備考 |
+    # | --- | --- | --- |
+    # | container_name | コンテナ名 | 外部から見た時の名前 |
+    # | hostname | ホスト名 | - |
+    # | build | Dockerfileの設定 | - |
+    # | image | 使用するコンテナイメージ | Dockerfileが無い場合指定 |
+    # | volumes | マウントするフォルダ/デバイス設定 | ホスト側: コンテナ内 |
+    # | devices | GPIO等のデバイスファイルの受け渡し | privileged: true の場合は実質不要だが明示のため記載 |
+    # | privileged | USB(ICカードリーダー)の抜き差しを許可するための特権モード | 必要に応じて絞ること |
+    # | restart | コンテナの起動設定 | no unless-stopped always ... |
+    # | environment | コンテナ内の環境変数を設定 | Python の `os.environ.get` 等でも取得可能 |
+    # | ports | 外部からアクセス可能なポートを設定 | ホストマシンのポート番号:コンテナのポート番号 |
+    # | depends_on | サービス間の依存関係を定義 | - |
+    #
+    # IPアドレスの確認 : docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" [${container_name}の値]
+    #
+    # ==========================================
+    env_file: .env
+
+    container_name: ${CONTAINER_NAME}
+
+    hostname: ${CONTAINER_NAME}
+
+    build:
+      # ==========================================
+      # Dockerfileの設定項目
+      #
+      # | 項目 | 内容 |
+      # | --- | --- |
+      # | context/dockerfile | Dockerfileへの相対パス |
+      # | args | Dockerfile内の環境変数を設定 |
+      #
+      # ==========================================
+
+      context: ${Dockerfile_DIR}
+      dockerfile: ${Dockerfile}
+      args:
+        WS:           ${WS}
+        USER_NAME:    ${USER_NAME}
+        PASSWORD:     ${PASSWORD}
+        ENTRY_DIR:    ${ENTRY_DIR}
+        ENTRY_POINT:  ${ENTRY_POINT}
+        LANG:         ${LANG}
+
+    # image: ubuntu:25.10
+
+    # ==========================================
+    # GPIO(LED) / USB(ICカードリーダー) をコンテナへ受け渡すための設定
+    #
+    # | 項目 | 内容 | 備考 |
+    # | --- | --- | --- |
+    # | /dev/gpiomem | 旧世代Raspberry PiのGPIO制御用デバイス | Pi 5では基本的に使用しない |
+    # | /dev/gpiochip4 | Raspberry Pi 5 (RP1チップ) のGPIOチップ | ホストの `ls /dev/gpiochip*` で確認し番号を合わせること |
+    # | /dev/bus/usb | USB接続のICカードリーダーをコンテナへ渡すためのバス一式 | 抜き差しに対応するため privileged と併用 |
+    #
+    # ==========================================
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+      - /dev/gpiochip4:/dev/gpiochip4
+
+    privileged: true
+
+    volumes:
+      - ${VOLUME}:/home/${USER_NAME}/${WS}
+      - /dev/bus/usb:/dev/bus/usb
+
+    restart: no
+
+    environment:
+      - TZ=${TIME_ZONE}
+      - LANG=${LANG}
+
+    ports:
+      - "${PORT}:3000"
+
+    # depends_on:
+      # ==========================================
+      # サービス間 依存関係の設定項目
+      #
+      # | 項目 | 内容 | 備考 |
+      # | --- | --- | --- |
+      # | db | 依存サービス名 | dbサービス参照 |
+      #
+      # ==========================================
+      # - db                                # 先にdbサービスが動いていることを確認する
+
+    # command:
+      # ==========================================
+      # Dockerfile側で ENTRYPOINT (entrypoint.sh) を定義しているため、
+      # ここで command を指定する必要はない。
+      # entrypoint.sh が pcscd起動 → 一般ユーザーへ降格 → ${ENTRY_POINT} 実行、を行う。
+      # ==========================================
+
+    networks:
+      - docker_eth
+
+networks:
+  default:
+    external: true
+    name: bridge
+
+  docker_eth:
+    name: ${NETWORK_NAME}
+    driver: bridge
+    ipam:
+      driver: default
+      config:                               # 物理ネットワークに直接接続したい場合は実環境に合わせる
+        - subnet: ${IP_SUBNET_ADDR}/${IP_PREFIX}
+          gateway: ${IP_GATEWAY_ADDR}

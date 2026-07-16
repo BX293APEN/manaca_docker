@@ -1,0 +1,8 @@
+# start.py の実行に必要なPythonパッケージ
+#
+# | パッケージ名 | 用途 |
+# | --- | --- |
+# | pyscard | PC/SC経由でのICカードリーダー制御 |
+# | gpiozero | GPIO(LED)の制御 |
+pyscard
+gpiozero
