@@ -5,7 +5,7 @@
 # | --- | --- | --- |
 # | name | プロジェクト名 | 全て小文字 |
 # | services | 作成したいサービスを列挙 | YAMLはスペース2つ |
-# | nginx / db | 作成するサービスの名前 | docker composeで管理する際に必要 |
+# | linux / db | 作成するサービスの名前 | docker composeで管理する際に必要 |
 #
 # ==========================================
 
@@ -23,8 +23,8 @@ services:
     # | build | Dockerfileの設定 | - |
     # | image | 使用するコンテナイメージ | Dockerfileが無い場合指定 |
     # | volumes | マウントするフォルダ/デバイス設定 | ホスト側: コンテナ内 |
-    # | devices | GPIO等のデバイスファイルの受け渡し | privileged: true の場合は実質不要だが明示のため記載 |
-    # | privileged | USB(ICカードリーダー)の抜き差しを許可するための特権モード | 必要に応じて絞ること |
+    # | devices | GPIO等のデバイスファイルの受け渡し | ホスト側デバイス:コンテナ内デバイス |
+    # | device_cgroup_rules | USBデバイスクラス等への読み書き許可 | privileged を使わずに抜き差しへ追従するための設定 |
     # | restart | コンテナの起動設定 | no unless-stopped always ... |
     # | environment | コンテナ内の環境変数を設定 | Python の `os.environ.get` 等でも取得可能 |
     # | ports | 外部からアクセス可能なポートを設定 | ホストマシンのポート番号:コンテナのポート番号 |
@@ -69,14 +69,18 @@ services:
     # | --- | --- | --- |
     # | /dev/gpiomem | 旧世代Raspberry PiのGPIO制御用デバイス | Pi 5では基本的に使用しない |
     # | /dev/gpiochip4 | Raspberry Pi 5 (RP1チップ) のGPIOチップ | ホストの `ls /dev/gpiochip*` で確認し番号を合わせること |
-    # | /dev/bus/usb | USB接続のICカードリーダーをコンテナへ渡すためのバス一式 | 抜き差しに対応するため privileged と併用 |
+    # | /dev/bus/usb | USB接続のICカードリーダーをコンテナへ渡すためのバス一式 | ファイルとして見えるようにするだけの volumes マウント |
+    # | device_cgroup_rules | USBデバイスクラス(メジャー番号189)への読み書きを許可 | 抜き差しでバス/デバイス番号が変わっても追従できる。privileged: true は使わない |
     #
     # ==========================================
     devices:
       - /dev/gpiomem:/dev/gpiomem
       - /dev/gpiochip4:/dev/gpiochip4
 
-    privileged: true
+    device_cgroup_rules:
+      - 'c 189:* rmw'                      # USB (major 189) の全デバイスへ read/write/mknod を許可
+    
+    # privileged: true
 
     volumes:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
@@ -102,12 +106,18 @@ services:
       # ==========================================
       # - db                                # 先にdbサービスが動いていることを確認する
 
-    # command:
-      # ==========================================
-      # Dockerfile側で ENTRYPOINT (entrypoint.sh) を定義しているため、
-      # ここで command を指定する必要はない。
-      # entrypoint.sh が pcscd起動 → ${ENTRY_POINT} 実行(rootのまま)、を行う。
-      # ==========================================
+    # ==========================================
+    # 起動コマンド
+    #
+    # | 項目 | 内容 |
+    # | --- | --- |
+    # | command | コンテナ起動時に実行するエントリーポイント (.envのENTRY_DIR/ENTRY_POINTを参照) |
+    # | 備考 | ENTRY_POINT (start.sh) が pcscd起動 → start.py実行、を行う |
+    # | ファイル名変更時 | .env の ENTRY_POINT を書き換えるだけでよい (Dockerfile編集は不要) |
+    #
+    # ==========================================
+    command:
+      - /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 
     networks:
       - docker_eth

@@ -5,7 +5,7 @@
 # | --- | --- |
 # | ベースイメージ | ubuntu:25.10 |
 # | 用途 | 交通系ICカードリーダー(PC/SC)とGPIO(LED)を扱うPythonアプリの実行環境 |
-# | 注意 | GPIO/USBへの実機アクセスが必要なため、compose.yml側の devices / privileged 設定と対になっている |
+# | 注意 | GPIO/USBへの実機アクセスが必要なため、compose.yml側の devices / device_cgroup_rules 設定と対になっている |
 #
 # ==========================================
 
@@ -22,7 +22,7 @@ FROM ubuntu:25.10
 # | USER_NAME | コンテナ内に作成するユーザー名 |
 # | PASSWORD | ユーザー/rootのパスワード |
 # | ENTRY_DIR | エントリーポイントを配置するディレクトリ |
-# | ENTRY_POINT | エントリーポイントのファイル名 |
+# | ENTRY_POINT | エントリーポイントのファイル名 (start.sh) |
 # | LANG | ロケール設定 |
 #
 # ==========================================
@@ -38,7 +38,7 @@ ARG LANG
 ENV USER_ID=1001
 ENV GROUP_ID=1001
 
-# entrypoint.sh (実行時) から参照できるように ARG を ENV へ引き継ぐ
+# ビルド時に使用したユーザー/ディレクトリ情報をイメージに残しておく (参照用)
 ENV USER_NAME=${USER_NAME}
 ENV ENTRY_DIR=${ENTRY_DIR}
 ENV ENTRY_POINT=${ENTRY_POINT}
@@ -77,20 +77,24 @@ RUN apt update && \
 COPY linux_data/requirements.txt /tmp/requirements.txt
 RUN pip3 install --break-system-packages -r /tmp/requirements.txt
 
+# ==========================================
+# アプリ本体の配置
+#
+# | ファイル | 配置先 | 備考 |
+# | --- | --- | --- |
+# | start.py | /home/${USER_NAME}/${ENTRY_DIR}/start.py | カード読み取り/LED制御のPython本体 (固定ファイル名) |
+# | ${ENTRY_POINT} | /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT} | pcscd起動 → start.py実行 を行うラッパースクリプト |
+#
+# ENTRY_POINT (既定値 start.sh) は compose.yml の command から直接実行される。
+# ファイル名を変更する場合は、実ファイルをリネームし .env の ENTRY_POINT を
+# 書き換えるだけでよい (Dockerfile / compose.yml の編集は不要)。
+#
+# ==========================================
+COPY start.py /home/${USER_NAME}/${ENTRY_DIR}/start.py
+RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/start.py
+
 COPY ${ENTRY_POINT} /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
-
-# ==========================================
-# 起動スクリプトの配置
-#
-# | 項目 | 内容 |
-# | --- | --- |
-# | entrypoint.sh | pcscd起動 → Python実行 の順で処理するスクリプト |
-# | 備考 | pcscd(USB)・gpiozero(GPIO)とも root権限が必要なため、コンテナはrootのまま動作させる |
-#
-# ==========================================
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # USER ${USER_NAME}
 # root権限のままなら compose.yml で渡した /dev/gpiochip* 等へ素直にアクセスできるため、
@@ -99,6 +103,5 @@ RUN chmod +x /entrypoint.sh
 
 WORKDIR /home/${USER_NAME}/${WS}
 
-# 起動したら実行するコマンド
-# ENTRYPOINTを使うため、compose.yml側の command は不要
-ENTRYPOINT ["/entrypoint.sh"]
+# 起動コマンドは compose.yml 側の command
+# ( /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT} ) で指定する。

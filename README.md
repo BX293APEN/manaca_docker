@@ -26,9 +26,17 @@
 ## 注意事項
 
 - `pcscd` (PC/SCデーモン) と Pythonスクリプト (`start.py`) はどちらもroot権限で
-  動作します (`entrypoint.sh` 参照)。USB(カードリーダー)・GPIOともroot権限が
+  動作します (`start.sh` 参照)。USB(カードリーダー)・GPIOともroot権限が
   必要なため、あえて非rootユーザーへの降格は行っていません。
-- GPIOへのアクセスには `compose.yml` 側で `privileged: true` を設定しているため、
-  検証環境以外でそのまま使う場合はセキュリティ要件に応じて絞り込みを検討してください。
+- GPIOへのアクセスは `compose.yml` の `devices` で個別デバイスのみを明示的に
+  渡しています。USB(カードリーダー)は抜き差しでバス/デバイス番号が変わり
+  うるため、`device_cgroup_rules` でUSBデバイスクラス(メジャー番号189)への
+  読み書きのみを許可しています。`privileged: true` (ホストの全デバイス・
+  全capabilityを渡す設定) は使用していません。
 - gpiozeroのピン制御バックエンドは `lgpio` を使用しています
   (Raspberry Pi 5のRP1チップに対応するため)。
+- 起動ラッパースクリプト (`start.sh`) のファイル名は `.env` の `ENTRY_POINT`
+  で管理しています(既定値 `start.sh`)。名前を変更したい場合は、実ファイルを
+  リネームした上で `ENTRY_POINT` の値を書き換えるだけでよく、`Dockerfile` /
+  `compose.yml` 自体の編集は不要です。カード読み取り/LED制御を行う
+  `start.py` は `start.sh` と同じディレクトリに固定ファイル名で配置されます。
