@@ -349,7 +349,9 @@ if __name__ == "__main__":
     # デフォルト(chip=0)のままだと環境によっては40ピンヘッダのGPIOチップと
     # 一致せず `lgpio.error: 'can not open gpiochip'` になるため、
     # `.env` の GPIOCHIP (gpiodetectで確認した番号) を明示的に指定する
-    Device.pin_factory             = LGPIOFactory(chip=get_gpio_chip_number())
+    chip = get_gpio_chip_number()
+    print(f"GPIO chip = {chip}")
+    Device.pin_factory             = LGPIOFactory(chip=chip)
 
     led_pin                          = DigitalOutputDevice(pin=18)
     led_pin.off()
