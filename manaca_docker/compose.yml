@@ -78,9 +78,10 @@ services:
     devices:
       - ${GPIOCHIP}:${GPIOCHIP}
       - ${GPIOMEM}:${GPIOMEM}
-
+    
     device_cgroup_rules:
       - 'c 189:* rmw'                      # USB (major 189) の全デバイスへ read/write/mknod を許可
+      - 'c 254:* rmw'
 
     privileged: true
 
