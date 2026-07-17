@@ -83,10 +83,6 @@ services:
       - 'c 189:* rmw'                      # USB (major 189) の全デバイスへ read/write/mknod を許可
 
     # privileged: true
-      # ==========================================
-      # 上記の devices / device_cgroup_rules で解決しない場合の切り分け用。
-      # 通常は不要 (ホストの全デバイス・全capabilityを渡してしまうため)
-      # ==========================================
 
     volumes:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
@@ -112,16 +108,6 @@ services:
       # ==========================================
       # - db                                # 先にdbサービスが動いていることを確認する
 
-    # ==========================================
-    # 起動コマンド
-    #
-    # | 項目 | 内容 |
-    # | --- | --- |
-    # | command | コンテナ起動時に実行するエントリーポイント (.envのENTRY_DIR/ENTRY_POINTを参照) |
-    # | 備考 | ENTRY_POINT (start.sh) が pcscd起動 → start.py実行、を行う |
-    # | ファイル名変更時 | .env の ENTRY_POINT を書き換えるだけでよい (Dockerfile編集は不要) |
-    #
-    # ==========================================
     command:
       - /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 
