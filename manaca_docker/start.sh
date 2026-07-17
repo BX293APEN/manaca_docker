@@ -11,9 +11,10 @@
 # | --- | --- |
 # | 1 | dbus-daemon (D-Bus システムバス) をバックグラウンドで起動 |
 # | 2 | polkitd (PolicyKit) をバックグラウンドで起動 |
-# | 3 | pcscd (PC/SCデーモン) をバックグラウンドで起動 |
-# | 4 | pcscdの起動を待機 |
-# | 5 | 同じディレクトリに配置されている start.py を実行 |
+# | 3 | pcscdの残骸ソケット/PIDファイルを削除 |
+# | 4 | pcscd (PC/SCデーモン) をバックグラウンドで起動 |
+# | 5 | pcscdの起動を待機 |
+# | 6 | 同じディレクトリに配置されている start.py を実行 |
 #
 # | 備考 |
 # | --- |
@@ -21,6 +22,10 @@
 # | 動作しない。コンテナにはsystemdが無くdbus/polkitが自動起動しないため、 |
 # | ここで明示的に起動しておかないと |
 # | `Failed to establish context : Access denied.` になる。 |
+# | `restart: unless-stopped` はコンテナを再作成せず再起動するため、 |
+# | 異常終了時の /run/pcscd の残骸が残ると `Another pcscd seems to be |
+# | running.` となり `Failed to establish context : Service not |
+# | available.` になる。そのため起動前に /run/pcscd を作り直している。 |
 # | pcscd(USBアクセス)・gpiozero(GPIOアクセス)とも root権限が必要なため、 |
 # | コンテナはroot権限のまま動作させている(非rootへの降格は行わない)。 |
 # | 実行対象の start.py は自分自身と同じディレクトリから解決するため、 |
@@ -38,6 +43,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # D-Bus システムバスを起動
 # pcscdのクライアント認可(polkit)に必要
 # ==========================================
+rm -rf /run/dbus
 mkdir -p /run/dbus
 dbus-daemon --system --fork
 
@@ -53,13 +59,24 @@ for POLKITD_BIN in "$(command -v polkitd 2>/dev/null)" /usr/lib/policykit-1/polk
 done
 
 # D-Bus / polkitd の起動を待機
-sleep 1
+sleep 10
+
+# ==========================================
+# pcscdの残骸を削除
+# `restart: unless-stopped` はコンテナを作り直さず同じファイルシステムのまま
+# 再起動するため、異常終了時のソケット/PIDファイルが残ってしまい、
+# 新しいpcscdが「二重起動」と誤認して起動を拒否してしまう
+# (`file /run/pcscd/pcscd.comm already exists.`) ことがある。
+# 起動前に必ず掃除しておく。
+# ==========================================
+rm -rf /run/pcscd
+mkdir -p /run/pcscd
 
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
 /usr/sbin/pcscd --foreground &
 
 # pcscdの起動を待機
-sleep 2
+sleep 10
 
 # 同じディレクトリの start.py を実行 (rootのまま)
 exec python3 "${SCRIPT_DIR}/start.py"
