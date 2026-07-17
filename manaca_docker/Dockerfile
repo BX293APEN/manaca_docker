@@ -11,7 +11,7 @@
 
 # FROM [イメージ] [タグ]
 # Docker Hub (https://hub.docker.com/) 参照
-FROM ubuntu:24.10
+FROM ubuntu:25.10
 
 # ==========================================
 # ビルド引数 (compose.yml から受け取る)
