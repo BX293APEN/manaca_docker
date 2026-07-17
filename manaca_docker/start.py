@@ -12,11 +12,23 @@ pip install pyscard gpiozero
 
 | 手順 | 内容 |
 | --- | --- |
-| 1 | カードリーダーの初期化 (`SmartCardReaderSetup`) |
-| 2 | カードがタッチされるまで待機 |
-| 3 | タッチを検知したらLEDの状態を反転し、IDm/ATSを表示 |
-| 4 | カードが取り除かれるまで待機し、手順2に戻る |
+| 1 | GPIOチップ番号を環境変数 `GPIOCHIP` から取得し、lgpioピンファクトリを初期化 |
+| 2 | カードリーダーの初期化 (`SmartCardReaderSetup`) |
+| 3 | カードがタッチされるまで待機 |
+| 4 | タッチを検知したらLEDの状態を反転し、IDm/ATSを表示 |
+| 5 | カードが取り除かれるまで待機し、手順3に戻る |
+
+## GPIOチップ番号について
+
+gpiozeroの `lgpio` ピンファクトリは、チップ番号を指定しない場合デフォルトで
+`/dev/gpiochip0` を開こうとする。Raspberry Pi 5のRP1チップ(40ピンヘッダ)は
+`/dev/gpiochip4` に対応するため、明示的にチップ番号を指定する必要がある。
+本ファイルでは `.env` の `GPIOCHIP` (例: `/dev/gpiochip4`) を読み取り、
+末尾の数字をチップ番号として使用する。
 """
+
+import os
+import re
 
 from smartcard import (
     scard,
@@ -24,7 +36,30 @@ from smartcard import (
     System
 )
 
-import gpiozero
+from gpiozero import Device, DigitalOutputDevice
+from gpiozero.pins.lgpio import LGPIOFactory
+
+
+def get_gpio_chip_number(default=4):
+    """
+    環境変数 `GPIOCHIP` (例: `/dev/gpiochip4`) からチップ番号を取り出す関数。
+
+    `.env` の `GPIOCHIP` は `compose.yml` の `devices` / `env_file` を通じて
+    コンテナ内の環境変数としてもそのまま参照できる。
+
+    | 引数 | 型 | 内容 |
+    | --- | --- | --- |
+    | default | int | `GPIOCHIP` が未設定、または数値を抽出できない場合に使うチップ番号 |
+
+    | 戻り値 | 型 | 内容 |
+    | --- | --- | --- |
+    | chip_number | int | lgpioピンファクトリへ渡すGPIOチップ番号 |
+    """
+    chip_path = os.environ.get("GPIOCHIP", "")
+    match = re.search(r"(\d+)$", chip_path)
+    if match:
+        return int(match.group(1))
+    return default
 
 
 class SmartCardReaderSetup:
@@ -304,14 +339,20 @@ if __name__ == "__main__":
     #
     # | 処理内容 |
     # | --- |
+    # | GPIOチップ番号(GPIOCHIP)を指定してlgpioピンファクトリを初期化する |
     # | ICカードがタッチされるたびに、LEDの点灯/消灯を切り替える |
     # | 同じカードを置いたままでも連続でLEDが切り替わらないよう、取り除かれるまで待機する |
     #
     # ==========================================
-    led_pin                          = gpiozero.DigitalOutputDevice(pin=18)
+
+    # デフォルト(chip=0)のままだと Raspberry Pi 5 の40ピンヘッダ(chip=4)を
+    # 開けず `lgpio.error: 'can not open gpiochip'` になるため明示的に指定する
+    Device.pin_factory              = LGPIOFactory(chip=get_gpio_chip_number())
+
+    led_pin                         = DigitalOutputDevice(pin=18)
     led_pin.off()
 
-    cardRead                         = SmartCardReaderSetup()
+    cardRead                        = SmartCardReaderSetup()
 
     if not cardRead.setup():
         print("カードリーダーが刺さっていません")
