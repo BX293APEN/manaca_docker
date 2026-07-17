@@ -23,6 +23,8 @@
 # ==========================================
 set -e
 
+ls -l /dev/gpiochip*
+
 # 自分自身が置かれているディレクトリ (= ENTRY_DIR) を取得
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
