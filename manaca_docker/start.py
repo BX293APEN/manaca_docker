@@ -28,6 +28,25 @@ gpiozeroの `lgpio` ピンファクトリは、チップ番号を指定しない
 末尾の数字をチップ番号として使用する。
 """
 
+import gpiozero.pins.lgpio
+import lgpio
+
+def __patched_init(self, chip=0):
+    gpiozero.pins.lgpio.LGPIOFactory.__bases__[0].__init__(self)
+    chip_path = os.environ.get("GPIOCHIP", "")
+    match = re.search(r"(\d+)$", chip_path)
+    if match:
+        chip = int(match.group(1))
+    
+    self._handle = lgpio.gpiochip_open(chip)
+    self._chip = chip
+    self.pin_class = gpiozero.pins.lgpio.LGPIOPin
+
+gpiozero.pins.lgpio.LGPIOFactory.__init__ = __patched_init
+
+from gpiozero import Device, DigitalOutputDevice
+from gpiozero.pins.lgpio import LGPIOFactory
+
 import os
 import re
 
@@ -36,32 +55,6 @@ from smartcard import (
     util,
     System
 )
-
-from gpiozero import Device, DigitalOutputDevice
-from gpiozero.pins.lgpio import LGPIOFactory
-
-
-def get_gpio_chip_number(default=0):
-    """
-    環境変数 `GPIOCHIP` (例: `/dev/gpiochip0`) からチップ番号を取り出す関数。
-
-    `.env` の `GPIOCHIP` は `compose.yml` の `devices` / `env_file` を通じて
-    コンテナ内の環境変数としてもそのまま参照できる。
-
-    | 引数 | 型 | 内容 |
-    | --- | --- | --- |
-    | default | int | `GPIOCHIP` が未設定、または数値を抽出できない場合に使うチップ番号 |
-
-    | 戻り値 | 型 | 内容 |
-    | --- | --- | --- |
-    | chip_number | int | lgpioピンファクトリへ渡すGPIOチップ番号 |
-    """
-    chip_path = os.environ.get("GPIOCHIP", "")
-    match = re.search(r"(\d+)$", chip_path)
-    if match:
-        return int(match.group(1))
-    return default
-
 
 class SmartCardReaderSetup:
     """
@@ -345,14 +338,6 @@ if __name__ == "__main__":
     # | 同じカードを置いたままでも連続でLEDが切り替わらないよう、取り除かれるまで待機する |
     #
     # ==========================================
-
-    # デフォルト(chip=0)のままだと環境によっては40ピンヘッダのGPIOチップと
-    # 一致せず `lgpio.error: 'can not open gpiochip'` になるため、
-    # `.env` の GPIOCHIP (gpiodetectで確認した番号) を明示的に指定する
-    chip = get_gpio_chip_number()
-    print(f"GPIO chip = {chip}")
-    Device.pin_factory             = LGPIOFactory(chip=chip)
-
     led_pin                          = DigitalOutputDevice(pin=18)
     led_pin.off()
 
