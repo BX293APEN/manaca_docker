@@ -53,6 +53,7 @@ ENV GPIOZERO_PIN_FACTORY=lgpio
 # | 追加パッケージ | 用途 |
 # | --- | --- |
 # | pcscd / pcsc-tools / libpcsclite1 / libpcsclite-dev / libccid | ICカードリーダーとのPC/SC通信 |
+# | dbus / polkitd (無ければ policykit-1) | pcscdがクライアントを認可する際に使うD-Bus/PolicyKit (無いと Access denied になる) |
 # | swig / gcc / make / python3-dev | pyscard のビルドに必要 |
 # | python3 / python3-pip / python3-lgpio | Python本体とRaspberry Pi 5用GPIOバックエンド |
 # | usbutils | USBデバイスの確認 (lsusb 等) |
@@ -62,7 +63,10 @@ RUN apt update && \
     sudo nano iproute2 iputils-ping language-pack-ja \
     python3 python3-pip python3-dev liblgpio-dev \
     pcscd pcsc-tools libpcsclite1 libpcsclite-dev libccid \
+    dbus \
     swig gcc make usbutils && \
+    (apt install -y polkitd || apt install -y policykit-1) && \
+    dbus-uuidgen --ensure=/etc/machine-id && \
     useradd -m -s /bin/bash -u ${USER_ID} ${USER_NAME} && \
     usermod -aG sudo ${USER_NAME} && \
     echo "root:${PASSWORD}" | chpasswd && \
