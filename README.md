@@ -17,7 +17,7 @@
 | 手順 | 内容 |
 | --- | --- |
 | 1 | ホスト側でICカードリーダーをUSB接続し `lsusb` で認識を確認する |
-| 2 | `ls /dev/gpio*` を実行し、Pi 5のGPIOチップ/メモリデバイス番号 (通常 `gpiochip4` と `gpiomem4`) を確認する |
+| 2 | `gpiodetect` (要 `sudo apt install gpiod`) を実行し、`pinctrl-rp1` と表示された行のgpiochip番号を確認する (機種/カーネルにより `gpiochip0` だったり `gpiochip4` だったりする) |
 | 3 | 番号が異なる場合は `.env` の `GPIOCHIP` / `GPIOMEM` を実際の値に書き換える (`compose.yml`の編集は不要) |
 | 4 | `.env` の内容 (ユーザー名・パスワード・ポート番号等) を必要に応じて変更する |
 | 5 | `docker compose up --build` でビルド & 起動する |

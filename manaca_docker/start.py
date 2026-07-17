@@ -21,9 +21,10 @@ pip install pyscard gpiozero
 ## GPIOチップ番号について
 
 gpiozeroの `lgpio` ピンファクトリは、チップ番号を指定しない場合デフォルトで
-`/dev/gpiochip0` を開こうとする。Raspberry Pi 5のRP1チップ(40ピンヘッダ)は
-`/dev/gpiochip4` に対応するため、明示的にチップ番号を指定する必要がある。
-本ファイルでは `.env` の `GPIOCHIP` (例: `/dev/gpiochip4`) を読み取り、
+`/dev/gpiochip0` を開こうとする。40ピンヘッダに対応するgpiochip番号は
+機種/カーネルによって異なる (`gpiodetect` で `pinctrl-rp1` の番号を確認する
+こと。例えば `gpiochip0` だったり `gpiochip4` だったりする)。
+本ファイルでは `.env` の `GPIOCHIP` (例: `/dev/gpiochip0`) を読み取り、
 末尾の数字をチップ番号として使用する。
 """
 
@@ -40,9 +41,9 @@ from gpiozero import Device, DigitalOutputDevice
 from gpiozero.pins.lgpio import LGPIOFactory
 
 
-def get_gpio_chip_number(default=4):
+def get_gpio_chip_number(default=0):
     """
-    環境変数 `GPIOCHIP` (例: `/dev/gpiochip4`) からチップ番号を取り出す関数。
+    環境変数 `GPIOCHIP` (例: `/dev/gpiochip0`) からチップ番号を取り出す関数。
 
     `.env` の `GPIOCHIP` は `compose.yml` の `devices` / `env_file` を通じて
     コンテナ内の環境変数としてもそのまま参照できる。
@@ -345,14 +346,15 @@ if __name__ == "__main__":
     #
     # ==========================================
 
-    # デフォルト(chip=0)のままだと Raspberry Pi 5 の40ピンヘッダ(chip=4)を
-    # 開けず `lgpio.error: 'can not open gpiochip'` になるため明示的に指定する
-    Device.pin_factory              = LGPIOFactory(chip=get_gpio_chip_number())
+    # デフォルト(chip=0)のままだと環境によっては40ピンヘッダのGPIOチップと
+    # 一致せず `lgpio.error: 'can not open gpiochip'` になるため、
+    # `.env` の GPIOCHIP (gpiodetectで確認した番号) を明示的に指定する
+    Device.pin_factory             = LGPIOFactory(chip=get_gpio_chip_number())
 
-    led_pin                         = DigitalOutputDevice(pin=18)
+    led_pin                          = DigitalOutputDevice(pin=18)
     led_pin.off()
 
-    cardRead                        = SmartCardReaderSetup()
+    cardRead                         = SmartCardReaderSetup()
 
     if not cardRead.setup():
         print("カードリーダーが刺さっていません")

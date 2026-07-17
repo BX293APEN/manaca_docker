@@ -69,7 +69,7 @@ services:
     #
     # | 項目 | 内容 | 備考 |
     # | --- | --- | --- |
-    # | ${GPIOCHIP} | Raspberry Pi 5 (RP1チップ) の40ピンヘッダ用GPIOチップ | `.env` で管理。ホストの `ls /dev/gpio*` で確認し番号を合わせること |
+    # | ${GPIOCHIP} | Raspberry Pi 5 (RP1チップ) の40ピンヘッダ用GPIOチップ | `.env` で管理。`gpiodetect` で `pinctrl-rp1` の番号を確認し合わせること |
     # | ${GPIOMEM} | GPIOCHIPに対応するメモリマップドアクセス用デバイス | `.env` で管理。Pi 5では `/dev/gpiomem` ではなくチップ番号付き (`gpiomem0`〜`gpiomem4`) |
     # | /dev/bus/usb | USB接続のICカードリーダーをコンテナへ渡すためのバス一式 | ファイルとして見えるようにするだけの volumes マウント |
     # | device_cgroup_rules | USBデバイスクラス(メジャー番号189)への読み書きを許可 | 抜き差しでバス/デバイス番号が変わっても追従できる。privileged: true は使わない |
