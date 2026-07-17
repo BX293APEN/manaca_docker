@@ -82,7 +82,7 @@ services:
     device_cgroup_rules:
       - 'c 189:* rmw'                      # USB (major 189) の全デバイスへ read/write/mknod を許可
 
-    # privileged: true
+    privileged: true
 
     volumes:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
