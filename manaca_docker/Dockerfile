@@ -60,7 +60,7 @@ RUN apt update && \
     apt upgrade -y && \
     apt install -y \
     sudo nano iproute2 iputils-ping language-pack-ja \
-    python3 python3-pip python3-dev python3-lgpio \
+    python3 python3-pip python3-dev \
     pcscd pcsc-tools libpcsclite1 libpcsclite-dev libccid \
     swig gcc make usbutils && \
     useradd -m -s /bin/bash -u ${USER_ID} ${USER_NAME} && \
