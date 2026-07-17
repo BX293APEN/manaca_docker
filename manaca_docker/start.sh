@@ -75,8 +75,9 @@ mkdir -p /run/pcscd
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
 /usr/sbin/pcscd --foreground &
 
-# pcscdの起動を待機
-sleep 10
-
-# 同じディレクトリの start.py を実行 (rootのまま)
-exec python3 "${SCRIPT_DIR}/start.py"
+# 止まらないようにする
+while true; do
+    sleep 10 # pcscdの起動を待機
+    # 同じディレクトリの start.py を実行 (rootのまま)
+    exec python3 "${SCRIPT_DIR}/start.py"
+done

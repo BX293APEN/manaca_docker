@@ -63,7 +63,7 @@ RUN apt update && \
     sudo nano iproute2 iputils-ping language-pack-ja \
     python3 python3-pip python3-dev liblgpio-dev \
     pcscd pcsc-tools libpcsclite1 libpcsclite-dev libccid \
-    dbus \
+    dbus libusb pcsclite ccid opensc \
     swig gcc make usbutils && \
     (apt install -y polkitd || apt install -y policykit-1) && \
     dbus-uuidgen --ensure=/etc/machine-id && \
