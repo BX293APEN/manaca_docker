@@ -25,7 +25,7 @@ services:
     # | volumes | マウントするフォルダ/デバイス設定 | ホスト側: コンテナ内 |
     # | devices | GPIO等のデバイスファイルの受け渡し | ホスト側デバイス:コンテナ内デバイス |
     # | device_cgroup_rules | USBデバイスクラス等への読み書き許可 | privileged を使わずに抜き差しへ追従するための設定 |
-    # | privileged | 全てのデバイスにアクセス可能な特権モード | 必要に応じて絞ること |
+    # | privileged | 全てのデバイスにアクセス可能な特権モード | 通常はコメントアウトのまま。切り分け用の最終手段として残している |
     # | restart | コンテナの起動設定 | no unless-stopped always ... |
     # | environment | コンテナ内の環境変数を設定 | Python の `os.environ.get` 等でも取得可能 |
     # | ports | 外部からアクセス可能なポートを設定 | ホストマシンのポート番号:コンテナのポート番号 |
@@ -69,26 +69,30 @@ services:
     #
     # | 項目 | 内容 | 備考 |
     # | --- | --- | --- |
-    # | /dev/gpiomem | 旧世代Raspberry PiのGPIO制御用デバイス | Pi 5では基本的に使用しない |
-    # | /dev/gpiochip4 | Raspberry Pi 5 (RP1チップ) のGPIOチップ | ホストの `ls /dev/gpiochip*` で確認し番号を合わせること |
+    # | ${GPIOCHIP} | Raspberry Pi 5 (RP1チップ) の40ピンヘッダ用GPIOチップ | `.env` で管理。ホストの `ls /dev/gpio*` で確認し番号を合わせること |
+    # | ${GPIOMEM} | GPIOCHIPに対応するメモリマップドアクセス用デバイス | `.env` で管理。Pi 5では `/dev/gpiomem` ではなくチップ番号付き (`gpiomem0`〜`gpiomem4`) |
     # | /dev/bus/usb | USB接続のICカードリーダーをコンテナへ渡すためのバス一式 | ファイルとして見えるようにするだけの volumes マウント |
     # | device_cgroup_rules | USBデバイスクラス(メジャー番号189)への読み書きを許可 | 抜き差しでバス/デバイス番号が変わっても追従できる。privileged: true は使わない |
     #
     # ==========================================
     devices:
-      - /dev/gpiomem:/dev/gpiomem
-      - /dev/gpiochip4:/dev/gpiochip4
+      - ${GPIOCHIP}:${GPIOCHIP}
+      - ${GPIOMEM}:${GPIOMEM}
 
     device_cgroup_rules:
       - 'c 189:* rmw'                      # USB (major 189) の全デバイスへ read/write/mknod を許可
-    
+
     # privileged: true
+      # ==========================================
+      # 上記の devices / device_cgroup_rules で解決しない場合の切り分け用。
+      # 通常は不要 (ホストの全デバイス・全capabilityを渡してしまうため)
+      # ==========================================
 
     volumes:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
       - /dev/bus/usb:/dev/bus/usb
 
-    restart: no
+    restart: unless-stopped
 
     environment:
       - TZ=${TIME_ZONE}
@@ -108,6 +112,16 @@ services:
       # ==========================================
       # - db                                # 先にdbサービスが動いていることを確認する
 
+    # ==========================================
+    # 起動コマンド
+    #
+    # | 項目 | 内容 |
+    # | --- | --- |
+    # | command | コンテナ起動時に実行するエントリーポイント (.envのENTRY_DIR/ENTRY_POINTを参照) |
+    # | 備考 | ENTRY_POINT (start.sh) が pcscd起動 → start.py実行、を行う |
+    # | ファイル名変更時 | .env の ENTRY_POINT を書き換えるだけでよい (Dockerfile編集は不要) |
+    #
+    # ==========================================
     command:
       - /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 
