@@ -110,20 +110,3 @@ services:
 
     command:
       - /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
-
-    networks:
-      - docker_eth
-
-networks:
-  default:
-    external: true
-    name: bridge
-
-  docker_eth:
-    name: ${NETWORK_NAME}
-    driver: bridge
-    ipam:
-      driver: default
-      config:                               # 物理ネットワークに直接接続したい場合は実環境に合わせる
-        - subnet: ${IP_SUBNET_ADDR}/${IP_PREFIX}
-          gateway: ${IP_GATEWAY_ADDR}
