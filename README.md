@@ -16,17 +16,8 @@ LEDの点灯/消灯を切り替えるプロジェクト。
 
 ## セットアップ手順
 
-```bash
-# 1. ホスト側の準備 (root権限で1回だけ実行)
-#    NFCカーネルモジュール (nfc / pn533 / pn533_usb / port100 等) が
-#    ロードされている場合、Felicaリーダー(USB)をpcscdより先に横取りしてしまい、
-#    `lsusb` には表示されるのに `pcsc_scan` / `SCardListReaders` からは
-#    一切見えない、という現象が起きる。host.sh はこれをブラックリスト登録して回避する。
-sudo ./host.sh
-
-# 2. コンテナのビルド & 起動
-docker compose up --build -d
-```
+1. `sudo ./host.sh`
+2. `docker compose up --build -d`
 
 ## 動作確認
 
