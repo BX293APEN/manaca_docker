@@ -89,7 +89,7 @@ services:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
       - /dev/bus/usb:/dev/bus/usb
 
-    restart: unless-stopped
+    restart: no # unless-stopped
 
     environment:
       - TZ=${TIME_ZONE}

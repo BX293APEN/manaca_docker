@@ -328,7 +328,7 @@ class SmartCardReaderSetup:
 
 
 if __name__ == "__main__":
-    led_pin                          = DigitalOutputDevice(pin=18)
+    led_pin                          = DigitalOutputDevice(pin=23)
     led_pin.off()
 
     cardRead                         = SmartCardReaderSetup()
