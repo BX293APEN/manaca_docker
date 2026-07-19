@@ -4,7 +4,16 @@
 #
 # コンテナを起動する **前に、ホスト側で1回だけ** 実行するセットアップスクリプト。
 # `docker compose up` の実行前提条件を整えるためのものであり、
-# コンテナ内では実行しない (root権限が必要なため `sudo` 経由で実行すること)。
+# コンテナ内では実行しない。
+#
+# `.env` の `PLATFORM` によって処理を分岐する。
+#
+# | `PLATFORM` | 実行環境 | 処理内容 |
+# | --- | --- | --- |
+# | `linux`（デフォルト） | Raspberry Pi 等のネイティブLinux | NFC関連カーネルモジュールのブラックリスト登録 (要 `sudo`) |
+# | `windows` | Windows + Docker Desktop (WSL2) | usbipd-win でのUSBデバイスアタッチ手順を案内 (root不要) |
+#
+# --- linux (`PLATFORM=linux`) の処理順序 ---
 #
 # | 処理順序 | 内容 |
 # | --- | --- |
@@ -22,9 +31,49 @@
 # | これはコンテナ側の権限 (`privileged` や `device_cgroup_rules`) をいくら |
 # | 上げても解決しない、ホストカーネルレベルの問題であるため、 |
 # | コンテナ起動前にホスト側でモジュールを外しておく必要がある。 |
+# | これはネイティブLinuxカーネル固有の問題であり、Windows (WSL2) 側には |
+# | 存在しないため `PLATFORM=windows` の場合はこの処理をスキップする。 |
 #
 # ==========================================
 set -e
+
+# 自分自身と同じディレクトリの .env から PLATFORM を読み取る
+# (.env が無い、または PLATFORM 未設定の場合は "linux" 扱い)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/.env"
+PLATFORM="linux"
+if [ -f "${ENV_FILE}" ]; then
+    ENV_PLATFORM="$(grep -E '^PLATFORM=' "${ENV_FILE}" | tail -n1 | cut -d '=' -f2- | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
+    if [ -n "${ENV_PLATFORM}" ]; then
+        PLATFORM="${ENV_PLATFORM}"
+    fi
+fi
+
+# ==========================================
+# PLATFORM=windows の場合はLinuxカーネルモジュールの操作を行わず、
+# usbipd-win でのアタッチ手順を案内するだけで終了する (root不要)。
+# ==========================================
+if [ "${PLATFORM}" = "windows" ]; then
+    echo "PLATFORM=windows のため、Linux向けのNFCドライバ回避処理はスキップします。"
+    echo
+    echo "USBカードリーダーをWSL2 (Docker Desktop) へ引き渡すには、"
+    echo "Windows側で usbipd-win (https://github.com/dorssel/usbipd-win) が必要です。"
+    echo
+
+    if command -v usbipd.exe >/dev/null 2>&1; then
+        echo "接続中のUSBデバイス一覧 (usbipd.exe list):"
+        usbipd.exe list || true
+        echo
+    fi
+
+    echo "「管理者権限のPowerShell」で以下を実行してください:"
+    echo "  usbipd list                          # BUSIDを確認"
+    echo "  usbipd bind   --busid <BUSID>        # 初回のみ"
+    echo "  usbipd attach --wsl --busid <BUSID>  # WSL2へアタッチ"
+    echo
+    echo "完了したら 'docker compose up --build -d' を実行してください。"
+    exit 0
+fi
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "root権限が必要です。 sudo ./host.sh で実行してください。" >&2

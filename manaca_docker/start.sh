@@ -14,7 +14,7 @@
 # | 3 | pcscdの残骸ソケット/PIDファイルを削除 |
 # | 4 | pcscd (PC/SCデーモン) をバックグラウンドで起動 |
 # | 5 | pcscdの起動を待機 |
-# | 6 | 同じディレクトリに配置されている start.py を実行 |
+# | 6 | WORKDIR (python/main.py) を実行 |
 #
 # | 備考 |
 # | --- |
@@ -28,16 +28,11 @@
 # | available.` になる。そのため起動前に /run/pcscd を作り直している。 |
 # | pcscd(USBアクセス)・gpiozero(GPIOアクセス)とも root権限が必要なため、 |
 # | コンテナはroot権限のまま動作させている(非rootへの降格は行わない)。 |
-# | 実行対象の start.py は自分自身と同じディレクトリから解決するため、 |
-# | 環境変数を経由せずに済んでいる。 |
+# | 実行対象の python/main.py は Dockerfile の WORKDIR (= /home/<USER_NAME>/<WS>) |
+# | からの相対パスで解決するため、環境変数を経由せずに済んでいる。 |
 #
 # ==========================================
 set -e
-
-ls -l /dev/gpiochip*
-
-# 自分自身が置かれているディレクトリ (= ENTRY_DIR) を取得
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ==========================================
 # D-Bus システムバスを起動
@@ -75,9 +70,7 @@ mkdir -p /run/pcscd
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
 /usr/sbin/pcscd --foreground &
 
-# 止まらないようにする
-while true; do
-    sleep 10 # pcscdの起動を待機
-    # 同じディレクトリの start.py を実行 (rootのまま)
-    exec python3 "${SCRIPT_DIR}/start.py"
-done
+sleep 10 # pcscdの起動を待機
+
+# WORKDIR (/home/<USER_NAME>/<WS>) 直下の python/main.py を実行 (rootのまま)
+exec python3 python/main.py

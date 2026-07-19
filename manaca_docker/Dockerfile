@@ -63,7 +63,7 @@ RUN apt update && \
     sudo nano iproute2 iputils-ping language-pack-ja \
     python3 python3-pip python3-dev liblgpio-dev \
     pcscd pcsc-tools libpcsclite1 libpcsclite-dev libccid \
-    dbus libusb pcsclite ccid opensc \
+    dbus opensc \
     swig gcc make usbutils && \
     (apt install -y polkitd || apt install -y policykit-1) && \
     dbus-uuidgen --ensure=/etc/machine-id && \
@@ -74,28 +74,10 @@ RUN apt update && \
     mkdir -p /home/${USER_NAME}/${ENTRY_DIR} && \
     update-locale LANG=${LANG}
 
-# ==========================================
-# Pythonパッケージのインストール
-# requirements.txt は linux_data (ビルドコンテキスト配下) に配置している
-# ==========================================
-COPY linux_data/requirements.txt /tmp/requirements.txt
-RUN pip3 install --break-system-packages -r /tmp/requirements.txt
+RUN pip3 install --break-system-packages pyscard
 
-# ==========================================
-# アプリ本体の配置
-#
-# | ファイル | 配置先 | 備考 |
-# | --- | --- | --- |
-# | start.py | /home/${USER_NAME}/${ENTRY_DIR}/start.py | カード読み取り/LED制御のPython本体 (固定ファイル名) |
-# | ${ENTRY_POINT} | /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT} | pcscd起動 → start.py実行 を行うラッパースクリプト |
-#
-# ENTRY_POINT (既定値 start.sh) は compose.yml の command から直接実行される。
-# ファイル名を変更する場合は、実ファイルをリネームし .env の ENTRY_POINT を
-# 書き換えるだけでよい (Dockerfile / compose.yml の編集は不要)。
-#
-# ==========================================
-COPY start.py /home/${USER_NAME}/${ENTRY_DIR}/start.py
-RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/start.py
+COPY ./linux_data/python /home/${USER_NAME}/${WS}/python
+RUN chmod +x /home/${USER_NAME}/${WS}/python/main.py
 
 COPY ${ENTRY_POINT} /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}
 RUN chmod +x /home/${USER_NAME}/${ENTRY_DIR}/${ENTRY_POINT}

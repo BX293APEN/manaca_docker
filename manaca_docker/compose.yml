@@ -75,9 +75,6 @@ services:
     # | device_cgroup_rules | USBデバイスクラス(メジャー番号189)への読み書きを許可 | 抜き差しでバス/デバイス番号が変わっても追従できる |
     #
     # ==========================================
-    devices:
-      - ${GPIOCHIP}:${GPIOCHIP}
-      - ${GPIOMEM}:${GPIOMEM}
     
     device_cgroup_rules:
       - 'c 189:* rmw'
@@ -95,8 +92,8 @@ services:
       - TZ=${TIME_ZONE}
       - LANG=${LANG}
 
-    ports:
-      - "${PORT}:3000"
+    # ports:
+    #   - "${PORT}:3000"
 
     # depends_on:
       # ==========================================
