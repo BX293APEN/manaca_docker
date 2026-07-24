@@ -53,6 +53,7 @@ for POLKITD_BIN in "$(command -v polkitd 2>/dev/null)" /usr/lib/policykit-1/polk
     fi
 done
 
+lsusb
 # D-Bus / polkitd の起動を待機
 sleep 10
 
