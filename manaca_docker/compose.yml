@@ -85,6 +85,8 @@ services:
     volumes:
       - ${VOLUME}:/home/${USER_NAME}/${WS}
       - /dev/bus/usb:/dev/bus/usb
+      - /run/udev:/run/udev:ro
+      - /var/run/pcscd/pcscd.sock:/var/run/pcscd/pcscd.sock
 
     restart: no # unless-stopped
 
