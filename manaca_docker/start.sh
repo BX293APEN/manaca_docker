@@ -56,15 +56,6 @@ done
 # D-Bus / polkitd の起動を待機
 sleep 10
 
-# ==========================================
-# pcscdの残骸を削除
-# `restart: unless-stopped` はコンテナを作り直さず同じファイルシステムのまま
-# 再起動するため、異常終了時のソケット/PIDファイルが残ってしまい、
-# 新しいpcscdが「二重起動」と誤認して起動を拒否してしまう
-# (`file /run/pcscd/pcscd.comm already exists.`) ことがある。
-# 起動前に必ず掃除しておく。
-# ==========================================
-rm -rf /run/pcscd
 mkdir -p /run/pcscd
 
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
