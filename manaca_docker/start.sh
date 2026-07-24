@@ -58,12 +58,12 @@ lsusb
 sleep 10
 
 # rm -rf /run/pcscd
-mkdir -p /run/pcscd
+# mkdir -p /run/pcscd
 
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
-/usr/sbin/pcscd --foreground &
+# /usr/sbin/pcscd --foreground &
 
-sleep 10 # pcscdの起動を待機
+# sleep 10 # pcscdの起動を待機
 
 # WORKDIR (/home/<USER_NAME>/<WS>) 直下の python/main.py を実行 (rootのまま)
 exec python3 python/main.py
