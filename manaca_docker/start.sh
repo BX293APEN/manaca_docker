@@ -57,7 +57,7 @@ lsusb
 # D-Bus / polkitd の起動を待機
 sleep 10
 
-rm -rf /run/pcscd
+rm -f /run/pcscd/pcscd.comm /run/pcscd/pcscd.pid
 mkdir -p /run/pcscd
 ls -la /run/pcscd 
 
