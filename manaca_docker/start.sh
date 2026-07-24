@@ -57,11 +57,12 @@ lsusb
 # D-Bus / polkitd の起動を待機
 sleep 10
 
-# rm -rf /run/pcscd
-# mkdir -p /run/pcscd
+rm -rf /run/pcscd
+mkdir -p /run/pcscd
+ls -la /run/pcscd 
 
 # pcscdをバックグラウンドで起動 (USBデバイスへのアクセスにroot権限が必要)
-# /usr/sbin/pcscd --foreground &
+/usr/sbin/pcscd --foreground --debug --apdu &
 
 # sleep 10 # pcscdの起動を待機
 
