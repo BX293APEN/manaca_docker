@@ -137,4 +137,11 @@ else
     fi
 fi
 
+apt update
+apt install -y pcscd libpcsclite1
+
+# サービスの起動と自動起動設定
+systemctl restart pcscd
+systemctl enable pcscd
+
 echo "完了しました。 'docker compose up --build -d' を実行してください。"
